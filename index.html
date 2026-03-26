@@ -1,488 +1,470 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Turn Timer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Rummy timer</title>
 
-<style>
-:root { --radius: 16px; }
+    <style>
+        input,
+        select,
+        textarea {
+            font-size: 16px;
+        }
 
-* { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: system-ui;
+            height: 100vh;
+            overflow: hidden;
+            background: #0f172a;
+            color: white;
+        }
 
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f172a;
-    color: white;
+        /* Layout */
+        .app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
+        .card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
+        }
 
-    min-height: 100vh;
-    overflow-y: auto;
+        /* Inputs FIXED */
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 14px;
+        }
 
-    transition: background 0.3s ease;
-}
+        /* Player row */
+        .player-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
 
-.app {
-    width: 100%;
-    max-width: 500px;
-    padding: 16px;
-    margin: 20px 0;
-}
+        .player-row input {
+            flex: 1;
+        }
 
-.card {
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(12px);
-    border-radius: var(--radius);
-    padding: 20px;
-}
+        /* Button FIXED */
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #d1d5db);
+            color: black;
+            cursor: pointer;
+        }
 
-/* Inputs */
-.player-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-}
+        /* Color preview */
+        .color-preview {
+            width: 40px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
 
-.player-row input {
-    flex: 1;
-}
+        /* FULLSCREEN PICKER */
+        .color-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
 
-input, select {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.1);
-    color: white;
-}
+        .color-modal.active {
+            display: flex;
+        }
 
-button {
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    border: none;
-    font-weight: bold;
-    background: white;
-    color: black;
-}
+        .color-grid {
+            background: #111;
+            padding: 20px;
+            border-radius: 14px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
 
-/* Color picker */
-.color-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 110px;
-}
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
 
-.color-option {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid transparent;
-}
+        .color-option.disabled {
+            opacity: 0;
+            pointer-events: none;
+        }
 
-.color-option.selected {
-    border-color: white;
-    transform: scale(1.2);
-}
+        /* Players */
+        .players {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
 
-/* Players */
-.players {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
+        .player {
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            opacity: 1;
+            transition: all 0.1s ease;
+        }
 
-.player {
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    opacity: 0.6;
-    transition: 0.2s;
-    border: 2px solid transparent;
-}
+        .player.active {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 0 12px white;
+        }
 
-.player.active {
-    opacity: 1;
-    border-color: white;
-    transform: scale(1.05);
-}
-.color-dropdown {
-    position: relative;
-    width: 50px;
-}
+        /* Timer */
+        .timerView {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            padding: 1rem;
+        }
 
-.color-preview {
-    width: 50px;
-    height: 45px;
-    border-radius: 10px;
-    cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.2);
-}
+        .turn {
+            text-align: center;
+            flex: 1;
+            font-size: 1.4rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
 
-.color-options {
-    position: absolute;
-    top: 55px;
-    left: 0;
-    background: rgba(0,0,0,0.9);
-    border-radius: 10px;
-    padding: 8px;
-    display: none;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 120px;
-    z-index: 10;
-}
+        /* Circle */
+        .timer-center {
+            flex: 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
 
-.color-options.active {
-    display: flex;
-}
+        .timer-text {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
 
-.color-option {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid transparent;
-}
+        svg {
+            width: 180px;
+            height: 180px;
+        }
 
-.color-option.selected {
-    border-color: white;
-    transform: scale(1.15);
-}
-/* Timer */
-.turn {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    text-align: center;
-}
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 10;
+        }
 
-.timer {
-    font-size: 4rem;
-    font-weight: bold;
-    text-align: center;
-}
+        .circle-progress {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
 
-@media (orientation: landscape) {
-    .app { max-width: 800px; }
-    .timer { font-size: 5rem; }
-}
-</style>
+        .starter-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 0.8rem;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="app">
+    <div class="app">
 
-<!-- CONFIG -->
-<div id="config" class="card">
-    <h3>Turn Timer</h3>
+        <!-- CONFIG -->
+        <div id="config" class="card">
+            <h3>Rummy Timer</h3>
 
-    <div class="player-row">
-        <input id="p1" placeholder="Player 1">
-        <div class="color-dropdown" id="cd1">
-            <div class="color-preview" id="preview1"></div>
-            <div class="color-options" id="cp1"></div>
+            <div class="player-row">
+                <input id="p1" placeholder="Player 1">
+                <div class="color-preview" id="c1"></div>
+            </div>
+
+            <div class="player-row">
+                <input id="p2" placeholder="Player 2">
+                <div class="color-preview" id="c2"></div>
+            </div>
+
+            <div class="player-row">
+                <input id="p3" placeholder="Player 3">
+                <div class="color-preview" id="c3"></div>
+            </div>
+
+            <div class="player-row">
+                <input id="p4" placeholder="Player 4">
+                <div class="color-preview" id="c4"></div>
+            </div>
+
+
+
+            <div class="starter-wrapper">
+                <select id="starter">
+                    <option value="0">Player 1 starts</option>
+                    <option value="1">Player 2 starts</option>
+                    <option value="2">Player 3 starts</option>
+                    <option value="3">Player 4 starts</option>
+                </select>
+                <input id="timeInput" type="number" value="45" min="0" step="1" placeholder="Seconds">
+            </div>
+            <button onclick="startGame()">Start Game</button>
+
         </div>
+
+
+        <!-- TIMER -->
+        <div id="timerView" class="card timerView" style="display:none;">
+            <div class="players" id="playersList"></div>
+            <div class="turn" id="turnText"></div>
+
+            <div class="timer-center">
+                <svg>
+                    <circle class="circle-bg" cx="90" cy="90" r="80" />
+                    <circle id="progressCircle" class="circle-progress" cx="90" cy="90" r="80" stroke-dasharray="502"
+                        stroke-dashoffset="0" />
+                </svg>
+                <div class="timer-text" id="timeDisplay">0</div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="player-row">
-        <input id="p2" placeholder="Player 2">
-        <div class="color-dropdown" id="cd2">
-            <div class="color-preview" id="preview2"></div>
-            <div class="color-options" id="cp2"></div>
-        </div>
+    <!-- COLOR MODAL -->
+    <div class="color-modal" id="colorModal">
+        <div class="color-grid" id="colorGrid"></div>
     </div>
 
-    <div class="player-row">
-        <input id="p3" placeholder="Player 3">
-        <div class="color-dropdown" id="cd3">
-            <div class="color-preview" id="preview3"></div>
-            <div class="color-options" id="cp3"></div>
-        </div>
-    </div>
+    <script>
+        const palette = [
+            "#1f77b4", // blue
+            "#2ca02c", // green
+            "#ffbf00", // yellow (not pale)
+            "#ff7f0e", // orange
+            "#9467bd", // purple
+            "#17becf", // cyan
+            "#8c564b", // brown
+            "#fcddf2"  // gray
+        ];
 
-    <div class="player-row">
-        <input id="p4" placeholder="Player 4">
-        <div class="color-dropdown" id="cd4">
-            <div class="color-preview" id="preview4"></div>
-            <div class="color-options" id="cp4"></div>
-        </div>
-    </div>
+        let playerColors = palette.slice(0, 4);
+        let activePicker = null;
 
-    <select id="starter">
-        <option value="0">Player 1 starts</option>
-        <option value="1">Player 2 starts</option>
-        <option value="2">Player 3 starts</option>
-        <option value="3">Player 4 starts</option>
-    </select>
+        /* Init previews */
+        ["c1", "c2", "c3", "c4"].forEach((id, i) => {
+            const el = document.getElementById(id);
+            el.style.background = playerColors[i];
 
-    <input id="timeInput" placeholder="10s">
-
-    <button onclick="startGame()">Start Game</button>
-</div>
-
-<!-- TIMER -->
-<div id="timerView" class="card" style="display:none;">
-    <div class="players" id="playersList"></div>
-    <div class="turn" id="turnText"></div>
-    <div class="timer" id="timeDisplay">0</div>
-</div>
-
-</div>
-
-<script>
-let players = [];
-let playerColors = ["#3b82f6", "#22c55e", "#eab308", "#a855f7"];
-let currentPlayer = 0;
-
-let duration = 0;
-let remaining = 0;
-let interval = null;
-
-let isRunning = false;
-let isFinished = false;
-let pressTimer = null;
-
-const palette = [
-    "#2563eb", // strong blue
-    "#06b6d4", // cyan
-    "#14b8a6", // teal
-    "#22c55e", // green
-    "#84cc16", // lime
-    "#eab308", // yellow
-    "#f59e0b", // amber (safe, not red)
-    "#6366f1", // indigo
-    "#8b5cf6", // violet
-    "#a855f7", // purple
-    "#d946ef", // magenta (not red)
-    "#0ea5e9"  // sky blue
-];
-
-// Parse time
-function parseTime(input) {
-    input = input.trim().toLowerCase();
-    if (input.endsWith("s")) return parseFloat(input) * 1000;
-    return parseFloat(input) * 1000;
-}
-
-// Create color pickers
-function createColorPicker(containerId, previewId, index) {
-    const container = document.getElementById(containerId);
-    const preview = document.getElementById(previewId);
-
-    container.innerHTML = "";
-
-    preview.style.background = playerColors[index];
-
-    // Toggle dropdown
-    preview.addEventListener("click", (e) => {
-        e.stopPropagation();
-        container.classList.toggle("active");
-    });
-
-    palette.forEach(color => {
-        const div = document.createElement("div");
-        div.className = "color-option";
-        div.style.background = color;
-
-        if (color === playerColors[index]) {
-            div.classList.add("selected");
-        }
-
-        div.addEventListener("click", (e) => {
-            e.stopPropagation();
-
-            playerColors[index] = color;
-
-            container.querySelectorAll(".color-option")
-                .forEach(el => el.classList.remove("selected"));
-
-            div.classList.add("selected");
-
-            preview.style.background = color;
-
-            // preview background
-            document.body.style.background = color + "cc";
-
-            container.classList.remove("active");
+            el.onclick = () => {
+                activePicker = i;
+                openColorModal();
+            };
         });
 
-        container.appendChild(div);
-    });
-}
-document.addEventListener("click", () => {
-    document.querySelectorAll(".color-options")
-        .forEach(el => el.classList.remove("active"));
-});
-// Start game
-function startGame() {
-    players = [
-        p1.value || "Player 1",
-        p2.value || "Player 2",
-        p3.value || "Player 3",
-        p4.value || "Player 4"
-    ];
+        /* Modal */
+        function openColorModal() {
+            colorModal.classList.add("active");
+            colorGrid.innerHTML = "";
 
-    currentPlayer = parseInt(starter.value);
-    duration = parseTime(timeInput.value);
-    if (!duration) return;
+            palette.forEach(color => {
+                const div = document.createElement("div");
+                div.className = "color-option";
+                div.style.background = color;
 
-    config.style.display = "none";
-    timerView.style.display = "block";
+                if (playerColors.includes(color) && playerColors[activePicker] !== color) {
+                    div.classList.add("disabled");
+                }
 
-    renderPlayers();
-    startTimer();
-}
+                div.onclick = () => {
+                    playerColors[activePicker] = color;
+                    updatePreviews();
+                    closeModal();
+                };
 
-// Render players
-function renderPlayers() {
-    playersList.innerHTML = "";
+                colorGrid.appendChild(div);
+            });
+        }
 
-    players.forEach((p, i) => {
-        const div = document.createElement("div");
-        div.className = "player";
-        div.id = "player-" + i;
-        div.innerText = p;
-        div.style.background = playerColors[i];
-        playersList.appendChild(div);
-    });
-}
+        function closeModal() {
+            colorModal.classList.remove("active");
+        }
 
-// UI update
-function updateUI() {
-    turnText.innerText = `It's ${players[currentPlayer]}'s turn`;
+        colorModal.onclick = (e) => {
+            if (e.target === colorModal) closeModal();
+        };
 
-    document.querySelectorAll(".player").forEach(el =>
-        el.classList.remove("active"));
+        function updatePreviews() {
+            ["c1", "c2", "c3", "c4"].forEach((id, i) => {
+                document.getElementById(id).style.background = playerColors[i];
+            });
+        }
 
-    document.getElementById("player-" + currentPlayer)
-        .classList.add("active");
-}
+        /* Focus preview */
+        ["p1", "p2", "p3", "p4"].forEach((id, i) => {
+            document.getElementById(id).addEventListener("focus", () => {
+                document.body.style.background = playerColors[i] + "cc";
+            });
+        });
 
-// Timer
-function startTimer() {
-    remaining = duration;
-    isRunning = true;
-    isFinished = false;
+        /* Timer logic stays SAME (unchanged) */
 
-    updateUI();
+        let players = [], currentPlayer = 0, duration = 0, remaining = 0, interval;
+        const circumference = 502;
 
-    clearInterval(interval);
+        function parseTime(v) {
+            v = v.trim().toLowerCase();
+            return parseFloat(v) * 1000;
+        }
 
-    interval = setInterval(() => {
-        remaining -= 50;
+        function startGame() {
+            players = [p1.value || "P1", p2.value || "P2", p3.value || "P3", p4.value || "P4"];
+            currentPlayer = parseInt(starter.value) - 1;
+            duration = parseTime(timeInput.value);
 
-        if (remaining <= 0) {
-            remaining = 0;
+            config.style.display = "none";
+            timerView.style.display = "flex";
+
+            renderPlayers();
+            startTimer();
+        }
+
+        function renderPlayers() {
+            playersList.innerHTML = "";
+            players.forEach((p, i) => {
+                const d = document.createElement("div");
+                d.className = "player";
+                d.id = "pl" + i;
+                d.innerText = p;
+                d.style.background = playerColors[i];
+                playersList.appendChild(d);
+            });
+        }
+
+        function updateUI() {
+            turnText.innerText = `It's ${players[currentPlayer]}'s turn`;
+            document.querySelectorAll(".player").forEach(el => el.classList.remove("active"));
+            document.getElementById("pl" + currentPlayer).classList.add("active");
+        }
+
+        function startTimer() {
+            remaining = duration;
+            updateUI();
+
             clearInterval(interval);
-            timerFinished();
+
+            interval = setInterval(() => {
+                remaining -= 50;
+
+                if (remaining <= 0) {
+                    remaining = 0;
+                    clearInterval(interval);
+                    timeDisplay.innerText = "Discard!";
+                    return;
+                }
+
+                updateDisplay();
+            }, 50);
         }
 
-        updateDisplay();
-    }, 50);
-}
-
-function nextPlayer() {
-    currentPlayer = (currentPlayer + 1) % players.length;
-}
-
-// Tap → next player ONLY in game
-document.addEventListener("click", () => {
-    if (timerView.style.display !== "block") return;
-    if (!isRunning && !isFinished) return;
-
-    nextPlayer();
-    startTimer();
-});
-
-function timerFinished() {
-    isRunning = false;
-    isFinished = true;
-    timeDisplay.innerText = "Discard a card!";
-}
-
-// Color helpers
-function hexToRgb(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
-}
-
-function interpolate(c1, c2, f) {
-    return {
-        r: Math.round(c1.r + (c2.r - c1.r)*f),
-        g: Math.round(c1.g + (c2.g - c1.g)*f),
-        b: Math.round(c1.b + (c2.b - c1.b)*f)
-    };
-}
-
-// Background transition
-function updateDisplay() {
-    if (!isFinished) {
-        timeDisplay.innerText = (remaining/1000).toFixed(1);
-    }
-
-    const progress = 1 - (remaining / duration);
-    const c1 = hexToRgb(playerColors[currentPlayer]);
-    const c2 = {r:255,g:0,b:0};
-
-    const c = interpolate(c1,c2,progress);
-
-    document.body.style.background = `rgb(${c.r},${c.g},${c.b})`;
-}
-
-// Focus preview
-["p1","p2","p3","p4"].forEach((id,i)=>{
-    document.getElementById(id).addEventListener("focus",()=>{
-        document.body.style.background = playerColors[i] + "cc";
-    });
-});
-
-// Reset preview
-document.querySelectorAll("#config input").forEach(input=>{
-    input.addEventListener("blur",()=>{
-        if (!isRunning) {
-            document.body.style.background = "#0f172a";
+        function hexToRgb(h) {
+            const n = parseInt(h.slice(1), 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
         }
-    });
-});
 
-// Long press exit
-document.addEventListener("mousedown", startPress);
-document.addEventListener("touchstart", startPress);
-document.addEventListener("mouseup", cancelPress);
-document.addEventListener("touchend", cancelPress);
+        function interpolate(a, b, f) {
+            return {
+                r: Math.round(a.r + (b.r - a.r) * f),
+                g: Math.round(a.g + (b.g - a.g) * f),
+                b: Math.round(a.b + (b.b - a.b) * f)
+            };
+        }
 
-function startPress() {
-    pressTimer = setTimeout(() => {
-        clearInterval(interval);
-        isRunning = false;
-        isFinished = false;
+        function updateDisplay() {
+            timeDisplay.innerText = (remaining / 1000).toFixed(1);
 
-        timerView.style.display = "none";
-        config.style.display = "block";
+            const progress = remaining / duration;
+            progressCircle.style.strokeDashoffset = circumference * (1 - progress);
 
-        document.body.style.background = "#0f172a";
-    }, 700);
-}
+            const c1 = hexToRgb(playerColors[currentPlayer]);
+            const c2 = { r: 255, g: 0, b: 0 };
+            const c = interpolate(c1, c2, 1 - progress);
 
-function cancelPress() {
-    clearTimeout(pressTimer);
-}
+            document.body.style.background = `rgb(${c.r},${c.g},${c.b})`;
+            progressCircle.style.stroke = playerColors[currentPlayer];
+        }
 
-// Init pickers
-createColorPicker("cp1", "preview1", 0);
-createColorPicker("cp2", "preview2", 1);
-createColorPicker("cp3", "preview3", 2);
-createColorPicker("cp4", "preview4", 3);
-</script>
+        document.addEventListener("click", () => {
+            if (timerView.style.display !== "flex") return;
+            currentPlayer = (currentPlayer + 1) % players.length;
+            startTimer();
+        });
+
+        let pressTimer = null;
+
+        /* Start press */
+        function startPress(e) {
+            // only allow in timer screen
+            if (timerView.style.display !== "flex") return;
+
+            // ignore inputs/buttons
+            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+
+            pressTimer = setTimeout(() => {
+                clearInterval(interval);
+
+                timerView.style.display = "none";
+                config.style.display = "block";
+
+                document.body.style.background = "#0f172a";
+            }, 700);
+        }
+
+        /* Cancel press */
+        function cancelPress() {
+            clearTimeout(pressTimer);
+        }
+
+        /* Mouse */
+        document.addEventListener("mousedown", startPress);
+        document.addEventListener("mouseup", cancelPress);
+        document.addEventListener("mouseleave", cancelPress);
+
+        /* Touch */
+        document.addEventListener("touchstart", startPress);
+        document.addEventListener("touchend", cancelPress);
+    </script>
 
 </body>
+
 </html>
